@@ -1,0 +1,21 @@
+I thought it needs an explanation as even I wrote this it was hard to understdand what is going on here after a while.
+
+I wish Juniper would be doing this differently, but they are not.
+A router or a switch just streams KV pairs in portions of data contained inside na_pb.OpenConfigData data type.
+
+KV pairs  belonging to a single entity say a physical interface are separated by a key called "__prefix__."
+But then there can be multiple occurrences of different fieldsets which belong to the same interface even within one OC data packet.
+That means you can recieve information about the same inerface multiple times but it would be different info. 
+For example first you get interface state and then you get the counters.
+
+Also, data types do not contain all the fields one would reasonably want.
+Say you want to get all the availible information about an interface counters, queue stats, state, description.
+To get the aforementioned data you need to collect it from three different telemetry packets.  
+
+You can imagine how complex this can get as I have to use multiple flags
+to track which data types have already been collected.
+
+Both functions assignIfDataAndSend() and handleInterfaceState() can write to a channel or a DB.
+This is because we want data to be as fresh as possible, we got new data we ship it even not all data will be updated. 
+
+SELECT derivative(mean("counters_out_octets"),1s) *8 FROM "phy_interface"  WHERE ("name" = 'ge-0/0/0') AND $timeFilter GROUP BY time(2s) fill(null)

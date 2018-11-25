@@ -1,0 +1,42 @@
+# Ignore all
+*
+
+# Unignore all with extensions
+!*.*
+
+# Unignore all dirs
+!*/
+
+!cmd/README
+
+docker/grafana/* 
+docker/influx/*
+
+.idea
+
+#UI
+ui/.DS_Store
+ui/node_modules
+ui/package-lock.json
+
+ui/tests/e2e/reports/
+ui/selenium-debug.log
+
+# local env files
+ui/.env.local
+ui/.env.*.local
+
+# Log files
+ui/npm-debug.log*
+ui/yarn-debug.log*
+ui/yarn-error.log*
+
+# Editor directories and files
+.idea
+.vscode
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw*
+cmd/my.db

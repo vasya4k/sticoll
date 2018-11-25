@@ -1,0 +1,54 @@
+version: "3"
+
+services:
+  nginx:
+    image: nginx:stable-alpine
+    container_name: nginx
+    volumes:
+      - ../ui/dist:/usr/share/nginx/html
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+    ports:
+      - "8080:80"
+  app:
+    image: golang:1.10.3-alpine
+    container_name: nest
+    volumes:
+      - ../.:/go/src/nest
+    ports:
+      - "8888:8888"  
+    working_dir: /go/src/nest/cmd
+    command: go run compress.go  grpc_stats.go  influx.go  interface_stats.go  log.go  main.go  subscribe.go  
+  influx:
+    image: influxdb:alpine
+    container_name: influxdb_telemetry
+    environment:
+      - "INFLUXDB_ADMIN_USER=rooba"
+      - "INFLUXDB_ADMIN_PASSWORD=cArambaBoom"
+      - "INFLUXDB_DB=ot"
+      - "INFLUXDB_ADMIN_ENABLED=true"
+      
+    restart: always
+    
+    volumes:   
+    - ./influx:/var/lib/influxdb
+    ports:
+    - "8083:8083"
+    - "8086:8086"
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana_telemetry
+    environment:
+      - "GF_USERS_ALLOW_SIGN_UP=false"
+      - "GF_AUTH_ANONYMOUS_ENABLED=false"
+      - "GF_SERVER_ROOT_URL=http://grafana.lo"
+      - "GF_SECURITY_ADMIN_PASSWORD=secret"
+    restart: always
+    
+    volumes:
+    - ./grafana:/var/lib/grafana
+    
+    command: mkdir var
+
+    ports:
+    - 3000:3000
