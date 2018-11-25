@@ -11,12 +11,12 @@ services:
       - "8080:80"
   app:
     image: golang:1.10.3-alpine
-    container_name: nest
+    container_name: sticoll
     volumes:
-      - ../.:/go/src/nest
+      - ../.:/go/src/sticoll
     ports:
       - "8888:8888"  
-    working_dir: /go/src/nest/cmd
+    working_dir: /go/src/sticoll/cmd
     command: go run compress.go  grpc_stats.go  influx.go  interface_stats.go  log.go  main.go  subscribe.go  
   influx:
     image: influxdb:alpine

@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	na_pb "nest/telemetry"
+	na_pb "sticoll/telemetry"
 
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
@@ -27,7 +27,7 @@ import (
 // You can imagine how complex this can get as I have to use multiple flags
 // to track which data types have already been collected.
 func (d *device) subSendAndReceive(client na_pb.OpenConfigTelemetry_TelemetrySubscribeClient) {
-	// ifStats := newinterfaceStats(d.ifxPointCh)
+	ifStats := newinterfaceStats(d.ifxPointCh)
 	go func() {
 		sigchan := make(chan os.Signal, 10)
 		signal.Notify(sigchan, os.Interrupt)
@@ -60,16 +60,16 @@ func (d *device) subSendAndReceive(client na_pb.OpenConfigTelemetry_TelemetrySub
 				dataType = splitPath[2]
 			}
 			// Now a path turns into a data type so it can be handeled differently
-			for _, keve := range ocData.Kv {
-				fmt.Printf("Path: %s key is %s and value is %s\n", dataType, keve.Key, keve.Value)
-			}
-			// switch dataType {
-			// case linecardPhyIf:
-			// 	ifStats.linecardPhyIfStats(ocData, d.cfg.Host)
-			// case linecardLogicIF:
-			// case interfaces:
-			// 	ifStats.interfaceState(ocData, d.cfg.Host)
+			// for _, keve := range ocData.Kv {
+			// 	fmt.Printf("Path: %s key is %s and value is %s\n", dataType, keve.Key, keve.Value)
 			// }
+			switch dataType {
+			case linecardPhyIf:
+				ifStats.linecardPhyIfStats(ocData, d.cfg.Host)
+			case linecardLogicIF:
+			case interfaces:
+				ifStats.interfaceState(ocData, d.cfg.Host)
+			}
 		}
 	}
 }

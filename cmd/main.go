@@ -14,8 +14,8 @@ import (
 	"sync"
 	"time"
 
-	auth_pb "nest/auth"
-	"nest/rest"
+	auth_pb "sticoll/auth"
+	"sticoll/rest"
 
 	bolt "github.com/coreos/bbolt"
 	"github.com/sirupsen/logrus"

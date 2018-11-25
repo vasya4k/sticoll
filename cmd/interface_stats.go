@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	na_pb "nest/telemetry"
+	na_pb "sticoll/telemetry"
 
 	"github.com/influxdata/influxdb/client/v2"
 )
@@ -173,10 +173,10 @@ func (s *interfaceStats) sendLinecardStats() {
 			extPhyif.linePhyIf = true
 			// if extPhyif.linePhyIf {
 			if extPhyif.linePhyIf && extPhyif.ifState {
-				if extPhyif.Name == "ge-0/0/0" {
-					// fmt.Println("Got new data for linecard ", extPhyif.Name, extPhyif.CountersOutOctets, extPhyif.Timestamp, extPhyif.StateDescription)
-					s.ifxPointCh <- &extPhyif
-				}
+				// if extPhyif.Name == "ge-0/0/0" {
+				// fmt.Println("Got new data for linecard ", extPhyif.Name, extPhyif.CountersOutOctets, extPhyif.Timestamp, extPhyif.StateDescription)
+				s.ifxPointCh <- &extPhyif
+				// }
 			}
 			s.pifsMap[s.pif.Name] = extPhyif
 		} else {
@@ -366,11 +366,11 @@ func (s *interfaceStats) interfaceState(ocData *na_pb.OpenConfigData, hostname s
 				extPhyif.ifState = true
 				s.pifsMap[s.pif.Name] = extPhyif
 				if extPhyif.linePhyIf && extPhyif.ifState {
-					if extPhyif.Name == "ge-0/0/0" {
-						// fmt.Println("Got new state data ", extPhyif.Name, extPhyif.CountersOutOctets, extPhyif.Timestamp, extPhyif.StateDescription)
-						s.ifxPointCh <- &extPhyif
+					// if extPhyif.Name == "ge-0/0/0" {
+					// fmt.Println("Got new state data ", extPhyif.Name, extPhyif.CountersOutOctets, extPhyif.Timestamp, extPhyif.StateDescription)
+					s.ifxPointCh <- &extPhyif
 
-					}
+					// }
 				}
 			} else {
 				extPhyif.ifState = true
