@@ -1,0 +1,70 @@
+
+I have started Sticoll to be able to collect streaming telemetry stats from Juniper devices, 
+but I am planing on adding Cisco and Nokia support.
+
+You probably want to ask why did not you use the existing collectors such as Opne-NTI or Telegraf?
+
+One of the main reasons was the output format, most of the existing tools just dump key-value pairs from
+gRPC into some database.
+
+It looks like this: 
+
+Path: /interfaces/ key is __prefix__ and value is &{/interfaces/interface[name='pfe-0/0/0']/}
+Path: /interfaces/ key is name and value is &{pfe-0/0/0}
+Path: /interfaces/ key is state/type and value is &{other}
+Path: /interfaces/ key is state/mtu and value is &{%!s(uint64=0)}
+Path: /interfaces/ key is state/name and value is &{pfe-0/0/0}
+Path: /interfaces/ key is state/description and value is &{}
+Path: /interfaces/ key is state/enabled and value is &{%!s(bool=true)}
+Path: /interfaces/ key is state/ifindex and value is &{%!s(uint64=514)}
+Path: /interfaces/ key is state/admin-status and value is &{UP}
+Path: /interfaces/ key is state/oper-status and value is &{UP}
+Path: /interfaces/ key is state/last-change and value is &{%!s(uint64=1005)}
+Path: /interfaces/ key is subinterfaces/subinterface[index='16383']/index and value is &{%!s(uint64=16383)}
+Path: /interfaces/ key is subinterfaces/subinterface[index='16383']/state/index and value is &{%!s(uint64=16383)}
+Path: /interfaces/ key is subinterfaces/subinterface[index='16383']/state/name and value is &{pfe-0/0/0.16383}
+Path: /interfaces/ key is subinterfaces/subinterface[index='16383']/state/description and value is &{}
+Path: /interfaces/ key is subinterfaces/subinterface[index='16383']/state/enabled and value is &{%!s(bool=true)}
+Path: /interfaces/ key is subinterfaces/subinterface[index='16383']/state/ifindex and value is &{%!s(uint64=517)}
+Path: /interfaces/ key is subinterfaces/subinterface[index='16383']/state/admin-status and value is &{UP}
+Path: /interfaces/ key is subinterfaces/subinterface[index='16383']/state/oper-status and value is &{UP}
+Path: /interfaces/ key is subinterfaces/subinterface[index='16383']/state/last-change and value is &{%!s(uint64=1005)}
+Path: /interfaces/ key is __prefix__ and value is &{/interfaces/interface[name='ge-0/0/0']/}
+
+Different keys represent different metrics.
+
+What I wanted is to have a whole piece of information about some component say a physical interface
+put into a structure and be able to encode in different formats.     
+
+So it looks like this:
+
+
+//PhyInterfaceStats sa
+type PhyInterfaceStats struct {
+	Prefix                   string
+	Host                     string
+	Name                     string
+	InitTime                 int64
+	ParentAeName             string
+	OperStatus               string
+	CarrierTransitions       int64
+	LastChange               int64
+	HighSpeed                int64
+	CountersOutOctets        int64
+	CountersOutUnicastPkts   int64
+	CountersOutMulticastPkts int64
+	CountersOutBroadcastPkts int64
+	CountersInOctets         int64
+	CountersInUnicastPkts    int64
+	CountersInMulticastPkts  int64
+	CountersInBroadcastPkts  int64
+	CountersInErrors         int64
+}    
+
+This way it is way easier to use the data.  I am still thinking about the right data format though. 
+There is a RESTFull API and a web interface allowing to add delete or update device details easily.
+At the moment data can only be exported into InfluxDB but I am working on Kafka export as well.
+I expect this collector to scale to at least couple hundred concurrent device connections.
+
+
+ 

@@ -16,6 +16,6 @@ You can imagine how complex this can get as I have to use multiple flags
 to track which data types have already been collected.
 
 Both functions assignIfDataAndSend() and handleInterfaceState() can write to a channel or a DB.
-This is because we want data to be as fresh as possible, we got new data we ship it even not all data will be updated. 
+This is because we want data to be as fresh as possible, we get new data and we ship it even if not all the data will be updated. 
 
 SELECT derivative(mean("counters_out_octets"),1s) *8 FROM "phy_interface"  WHERE ("name" = 'ge-0/0/0') AND $timeFilter GROUP BY time(2s) fill(null)
