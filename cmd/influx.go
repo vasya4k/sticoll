@@ -53,7 +53,7 @@ func (inf *influxDB) sendToInflux() {
 func (inf *influxDB) NewClientAndPoints() error {
 	var err error
 	// Create a new HTTPClient
-	inf.Addr = "http://localhost:8086"
+	inf.Addr = "http://influx:8086"
 	inf.User = "rooba"
 	inf.Pass = "cArambaBoom"
 	inf.Precision = "ms"
