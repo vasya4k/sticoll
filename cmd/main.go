@@ -87,6 +87,12 @@ func readCfg(db *bolt.DB) ([]*rest.GRPCCfg, error) {
 }
 
 func main() {
+	logrus.SetFormatter(&logrus.TextFormatter{
+		DisableColors: false,
+		FullTimestamp: true,
+	})
+	logrus.SetOutput(os.Stdout)
+
 	app := appCLISetup()
 	app.Action = func(c *cli.Context) {
 		db, err := bolt.Open("my.db", 0600, nil)
@@ -183,7 +189,7 @@ func (d *device) prepConAndSubscribe(wg *sync.WaitGroup) {
 					continue
 				}
 				if dat.Result == false {
-					logErrEvent(grpcTopic, grpcAuthErrEv, err)
+					logErrEvent(grpcTopic, grpcAuthErrEv, errors.New("login failure"))
 				} else {
 					break
 				}

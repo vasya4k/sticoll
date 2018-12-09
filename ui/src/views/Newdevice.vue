@@ -66,7 +66,8 @@ export default {
 			    password: this.item.password,
 			    cid: this.item.cid,
           ws: this.item.ws,
-          freq: this.item.paths[0].freq
+          freq: this.item.paths[0].freq,
+          uuid: this.item.uuid
         }
       }
     }  
@@ -88,6 +89,7 @@ export default {
 			    password: this.cfg.password,
 			    cid: this.cfg.cid,
           ws: parseInt(this.cfg.ws, 10),
+          uuid: this.item.uuid,
           paths: [
           {
             path: "/interfaces",

@@ -100,7 +100,7 @@ export default {
     deleteDevice (item) {
       console.log('aaaa', item)
       axios
-        .delete('http://' + window.location.hostname + ':8888/v1/device/'+ item.host)
+        .delete('http://' + window.location.hostname + ':8888/v1/device/'+ item.uuid)
         .then(response => {        
           console.log('deleted', response.data)
           this.getDevices()

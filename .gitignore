@@ -41,3 +41,4 @@ ui/yarn-error.log*
 *.sln
 *.sw*
 cmd/my.db
+cmd/my1.db

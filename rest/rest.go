@@ -2,28 +2,31 @@ package rest
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 
 	bolt "github.com/coreos/bbolt"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/satori/go.uuid"
 	"github.com/sirupsen/logrus"
 )
 
+const zeroUUID = "00000000-0000-0000-0000-000000000000"
+
 //GRPCCfg aaaa
 type GRPCCfg struct {
-	Host        string  `json:"host"`
-	Port        int     `json:"port"`
-	User        string  `json:"user"`
-	Password    string  `json:"password"`
-	Meta        bool    `json:"meta"`
-	EOS         bool    `json:"eos"`
-	CID         string  `json:"cid"`
-	WS          int32   `json:"ws"`
-	TLS         TLSCfg  `json:"tls"`
-	Paths       []Spath `json:"paths"`
-	Compression string  `json:"compression"`
+	Host        string    `json:"host"`
+	Port        int       `json:"port"`
+	User        string    `json:"user"`
+	Password    string    `json:"password"`
+	Meta        bool      `json:"meta"`
+	EOS         bool      `json:"eos"`
+	CID         string    `json:"cid"`
+	WS          int32     `json:"ws"`
+	TLS         TLSCfg    `json:"tls"`
+	Paths       []Spath   `json:"paths"`
+	Compression string    `json:"compression"`
+	UUID        uuid.UUID `json:"uuid"`
 }
 
 //Spath aaa
@@ -97,12 +100,15 @@ func StartHTTPSrv(db *bolt.DB) error {
 }
 
 func (h *handler) delDevice(c *gin.Context) {
-	hostname := c.Param("id")
-	fmt.Println(hostname)
-	err := h.db.Update(func(tx *bolt.Tx) error {
+	ud, err := uuid.FromString(c.Param("id"))
+	if err != nil {
+		c.AbortWithStatusJSON(500, err.Error())
+		return
+	}
+	err = h.db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte("devices"))
 		if b != nil {
-			err := b.Delete([]byte(hostname))
+			err := b.Delete(ud.Bytes())
 			if err != nil {
 				return err
 			}
@@ -113,7 +119,7 @@ func (h *handler) delDevice(c *gin.Context) {
 		c.AbortWithStatusJSON(500, err.Error())
 		return
 	}
-	c.JSON(200, hostname)
+	c.JSON(200, c.Param("id"))
 }
 
 func (h *handler) getDevices(c *gin.Context) {
@@ -128,7 +134,6 @@ func (h *handler) getDevices(c *gin.Context) {
 					return err
 				}
 				gCfgs = append(gCfgs, &g)
-				fmt.Println(string(k), string(v))
 				return nil
 			})
 			if err != nil {
@@ -150,6 +155,14 @@ func (h *handler) addDevice(c *gin.Context) {
 	if err != nil {
 		c.AbortWithStatusJSON(500, err)
 	}
+
+	if d.UUID.String() == zeroUUID {
+		d.UUID, err = uuid.NewV4()
+		if err != nil {
+			c.AbortWithStatusJSON(500, err)
+			return
+		}
+	}
 	err = h.db.Update(func(tx *bolt.Tx) error {
 		b, err := tx.CreateBucketIfNotExists([]byte("devices"))
 		if err != nil {
@@ -159,7 +172,7 @@ func (h *handler) addDevice(c *gin.Context) {
 		if err != nil {
 			c.AbortWithStatusJSON(500, err)
 		}
-		return b.Put([]byte(d.Host), data)
+		return b.Put(d.UUID.Bytes(), data)
 	})
 	if err != nil {
 		c.AbortWithStatusJSON(500, err)
