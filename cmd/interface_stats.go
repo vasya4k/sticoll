@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -99,7 +100,6 @@ type PhyInterfaceStats struct {
 
 //AddPoint add data to influx
 func (pif *PhyInterfaceStats) AddPoint(inf *influxDB) {
-
 	tags := map[string]string{
 		"name":        pif.Name,
 		"host":        pif.Host,
@@ -147,12 +147,23 @@ func parseNameFromPrefixVal(prefixVal string) (string, error) {
 	return name, nil
 }
 
+// fmt.Printf("Data: %08b \n", data[:4])
+func printAsJSON(i interface{}) {
+	b, err := json.MarshalIndent(i, "", "  ")
+	if err != nil {
+		log.Println(err)
+	}
+	fmt.Println(string(b))
+}
+
 func (s *interfaceStats) sendLinecardStats() {
 	if s.countersFound {
 		extPhyif, ok := s.pifsMap[s.pif.Name]
 		if ok {
 			if s.qStats.notOnlyBufSize {
-				fmt.Println("QSTAAAATS", s.qStats.IfName, s.qStats.queues[0].Pkts, s.qStats.queues[1].Pkts, s.qStats.queues[2].Pkts, s.qStats.queues[3].Pkts, s.qStats.queues[4].Pkts)
+				fmt.Println("QSTAAAATS")
+				printAsJSON(s.qStats)
+				// fmt.Println("QSTAAAATS", s.qStats.IfName, s.qStats.queues[0].Pkts, s.qStats.queues[1].Pkts, s.qStats.queues[2].Pkts, s.qStats.queues[3].Pkts, s.qStats.queues[4].Pkts)
 			}
 			extPhyif.InitTime = s.pif.InitTime
 			extPhyif.ParentAeName = s.pif.ParentAeName
@@ -173,10 +184,11 @@ func (s *interfaceStats) sendLinecardStats() {
 			extPhyif.linePhyIf = true
 			// if extPhyif.linePhyIf {
 			if extPhyif.linePhyIf && extPhyif.ifState {
-				// if extPhyif.Name == "ge-0/0/0" {
-				// fmt.Println("Got new data for linecard ", extPhyif.Name, extPhyif.CountersOutOctets, extPhyif.Timestamp, extPhyif.StateDescription)
-				s.ifxPointCh <- &extPhyif
-				// }
+				if extPhyif.Name == "ge-0/0/0" {
+					printAsJSON(extPhyif)
+					// fmt.Println("Got new data for linecard ", extPhyif.Name, extPhyif.CountersInUnicastPkts)
+					// s.ifxPointCh <- &extPhyif
+				}
 			}
 			s.pifsMap[s.pif.Name] = extPhyif
 		} else {
@@ -366,11 +378,13 @@ func (s *interfaceStats) interfaceState(ocData *na_pb.OpenConfigData, hostname s
 				extPhyif.ifState = true
 				s.pifsMap[s.pif.Name] = extPhyif
 				if extPhyif.linePhyIf && extPhyif.ifState {
-					// if extPhyif.Name == "ge-0/0/0" {
-					// fmt.Println("Got new state data ", extPhyif.Name, extPhyif.CountersOutOctets, extPhyif.Timestamp, extPhyif.StateDescription)
-					s.ifxPointCh <- &extPhyif
+					if extPhyif.Name == "ge-0/0/0" {
+						fmt.Println("State")
+						printAsJSON(extPhyif)
+						// fmt.Println("Got new state data ", extPhyif.Name, extPhyif.CountersInUnicastPkts)
+						// s.ifxPointCh <- &extPhyif
 
-					// }
+					}
 				}
 			} else {
 				extPhyif.ifState = true
