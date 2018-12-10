@@ -81,6 +81,7 @@ func readCfg(db *bolt.DB) ([]*rest.GRPCCfg, error) {
 		return nil
 	})
 	if err != nil {
+
 		return nil, err
 	}
 	return gCfgs, nil
@@ -92,7 +93,6 @@ func main() {
 		FullTimestamp: true,
 	})
 	logrus.SetOutput(os.Stdout)
-
 	app := appCLISetup()
 	app.Action = func(c *cli.Context) {
 		db, err := bolt.Open("my.db", 0600, nil)
@@ -107,13 +107,6 @@ func main() {
 				os.Exit(1)
 			}
 		}()
-		go func(db *bolt.DB) {
-			err = rest.StartHTTPSrv(db)
-			if err != nil {
-				logErrEvent("dbopen", "failure to open db file", err)
-				os.Exit(1)
-			}
-		}(db)
 		// creating new influx structure and initialising
 		var ifx influxDB
 		err = ifx.NewClientAndPoints()
@@ -128,7 +121,13 @@ func main() {
 		if err != nil {
 			logErrEvent(cfgErrTopic, cfgReadErrEv, err)
 		}
-
+		go func() {
+			err = rest.StartHTTPSrv(db, &cfgs)
+			if err != nil {
+				logErrEvent("http", "failure to start http server", err)
+				os.Exit(1)
+			}
+		}()
 		if len(cfgs) == 0 {
 			for {
 				time.Sleep(10 * time.Second)
@@ -159,7 +158,11 @@ func main() {
 }
 
 func (d *device) prepConAndSubscribe(wg *sync.WaitGroup) {
-	defer wg.Done()
+	defer func() {
+		d.cfg.RUnlock()
+		wg.Done()
+	}()
+
 	var conn *grpc.ClientConn
 	for {
 		err := addDialOptions(d)
@@ -178,6 +181,12 @@ func (d *device) prepConAndSubscribe(wg *sync.WaitGroup) {
 			user := d.cfg.User
 			pass := d.cfg.Password
 			if d.cfg.Meta == false {
+				d.cfg.RLock()
+				if d.cfg.Removed {
+					logInfoEvent(grpcTopic, "device removed", "exiting gorutine")
+					return
+				}
+				d.cfg.RUnlock()
 				dat, err := auth_pb.NewLoginClient(conn).LoginCheck(context.Background(), &auth_pb.LoginRequest{
 					UserName: user,
 					Password: pass,

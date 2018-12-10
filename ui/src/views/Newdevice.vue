@@ -53,6 +53,7 @@ export default {
           password: '',
           cid:      '',
           ws:       524288,
+          uuid: '',
           freq: 2000			  
         }   
       }
@@ -89,7 +90,7 @@ export default {
 			    password: this.cfg.password,
 			    cid: this.cfg.cid,
           ws: parseInt(this.cfg.ws, 10),
-          uuid: this.item.uuid,
+          uuid: this.cfg.uuid,
           paths: [
           {
             path: "/interfaces",

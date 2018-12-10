@@ -3,6 +3,7 @@ package rest
 import (
 	"encoding/json"
 	"os"
+	"sync"
 
 	bolt "github.com/coreos/bbolt"
 	"github.com/gin-contrib/cors"
@@ -27,6 +28,8 @@ type GRPCCfg struct {
 	Paths       []Spath   `json:"paths"`
 	Compression string    `json:"compression"`
 	UUID        uuid.UUID `json:"uuid"`
+	Removed     bool      `json:"removed"`
+	sync.RWMutex
 }
 
 //Spath aaa
@@ -51,7 +54,8 @@ type Cfg struct {
 }
 
 type handler struct {
-	db *bolt.DB
+	db   *bolt.DB
+	cfgs *[]*GRPCCfg
 }
 
 func readCfg() Cfg {
@@ -65,10 +69,11 @@ func readCfg() Cfg {
 }
 
 //StartHTTPSrv strts http server
-func StartHTTPSrv(db *bolt.DB) error {
+func StartHTTPSrv(db *bolt.DB, cfgs *[]*GRPCCfg) error {
 	cfg := readCfg()
 	h := handler{
-		db: db,
+		db:   db,
+		cfgs: cfgs,
 	}
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
@@ -119,6 +124,13 @@ func (h *handler) delDevice(c *gin.Context) {
 		c.AbortWithStatusJSON(500, err.Error())
 		return
 	}
+	for _, cfg := range *h.cfgs {
+		cfg.Lock()
+		if cfg.UUID == ud {
+			cfg.Removed = true
+		}
+		cfg.Unlock()
+	}
 	c.JSON(200, c.Param("id"))
 }
 
@@ -155,7 +167,6 @@ func (h *handler) addDevice(c *gin.Context) {
 	if err != nil {
 		c.AbortWithStatusJSON(500, err)
 	}
-
 	if d.UUID.String() == zeroUUID {
 		d.UUID, err = uuid.NewV4()
 		if err != nil {

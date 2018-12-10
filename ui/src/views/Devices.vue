@@ -123,7 +123,7 @@ export default {
   computed: {
     filteredSessions: function () {
       var self = this
-      return self.devices.filter(function (session) {
+      return self.devices.filter(function (session) {        
         var searchRegex = new RegExp(self.searchQuery, 'i')
         return searchRegex.test(session.host) || searchRegex.test(session['peer-address'])
       })
