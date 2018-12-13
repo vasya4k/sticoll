@@ -53,7 +53,7 @@ export default {
           password: '',
           cid:      '',
           ws:       524288,
-          uuid: '',
+          uuid: '00000000-0000-0000-0000-000000000000',
           freq: 2000			  
         }   
       }
@@ -82,7 +82,7 @@ export default {
     },
     add () {
       axios
-        .post('http://' + window.location.hostname + ':8888/v1/device',        
+        .post('http://' + window.location.hostname + ':8888/v1/device',
         {
           host: this.cfg.host,
 			    port: parseInt(this.cfg.port, 10),
@@ -96,15 +96,15 @@ export default {
             path: "/interfaces",
 					  freq: parseInt(this.cfg.freq, 10)
 				  }],
-			  })           
-        .then(response => {   
-          router.push('/devices')     
-          console.log(response)        
+			  })
+        .then(response => {
+          router.push('/devices')
+          console.log(response)
         })
         .catch(err => {
           console.log(err)
         })
-    }                      
+    }
   } 
 }
 </script>

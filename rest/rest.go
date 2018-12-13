@@ -90,7 +90,7 @@ func StartHTTPSrv(db *bolt.DB, cfgs *[]*GRPCCfg) error {
 	{
 		api.GET("/devices", h.getDevices)
 		api.POST("/device", h.addDevice)
-		api.PUT("/device", h.addDevice)
+		api.PUT("/device", h.updDevice)
 		api.DELETE("/device/:id", h.delDevice)
 	}
 	logrus.WithFields(logrus.Fields{
@@ -161,18 +161,12 @@ func (h *handler) getDevices(c *gin.Context) {
 	c.JSON(200, gCfgs)
 }
 
-func (h *handler) addDevice(c *gin.Context) {
+func (h *handler) updDevice(c *gin.Context) {
 	var d GRPCCfg
 	err := c.BindJSON(&d)
 	if err != nil {
 		c.AbortWithStatusJSON(500, err)
-	}
-	if d.UUID.String() == zeroUUID {
-		d.UUID, err = uuid.NewV4()
-		if err != nil {
-			c.AbortWithStatusJSON(500, err)
-			return
-		}
+		return
 	}
 	err = h.db.Update(func(tx *bolt.Tx) error {
 		b, err := tx.CreateBucketIfNotExists([]byte("devices"))
@@ -181,12 +175,43 @@ func (h *handler) addDevice(c *gin.Context) {
 		}
 		data, err := json.Marshal(&d)
 		if err != nil {
-			c.AbortWithStatusJSON(500, err)
+			return err
 		}
 		return b.Put(d.UUID.Bytes(), data)
 	})
 	if err != nil {
 		c.AbortWithStatusJSON(500, err)
+		return
+	}
+	c.JSON(200, &d)
+}
+
+func (h *handler) addDevice(c *gin.Context) {
+	var d GRPCCfg
+	err := c.BindJSON(&d)
+	if err != nil {
+		c.AbortWithStatusJSON(500, err)
+		return
+	}
+	d.UUID, err = uuid.NewV4()
+	if err != nil {
+		c.AbortWithStatusJSON(500, err)
+		return
+	}
+	err = h.db.Update(func(tx *bolt.Tx) error {
+		b, err := tx.CreateBucketIfNotExists([]byte("devices"))
+		if err != nil {
+			return err
+		}
+		data, err := json.Marshal(&d)
+		if err != nil {
+			return err
+		}
+		return b.Put(d.UUID.Bytes(), data)
+	})
+	if err != nil {
+		c.AbortWithStatusJSON(500, err)
+		return
 	}
 	c.JSON(200, &d)
 }

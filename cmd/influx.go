@@ -22,25 +22,25 @@ type ifxPoint interface {
 	AddPoint(inf *influxDB)
 }
 
-func (inf *influxDB) sendToInflux() {
-	defer inf.client.Close()
-	for d := range inf.dataCh {
-		d.AddPoint(inf)
-		if len(inf.bp.Points()) > inf.BatchSize {
+func (ifx *influxDB) sendToInflux() {
+	defer ifx.client.Close()
+	for d := range ifx.dataCh {
+		d.AddPoint(ifx)
+		if len(ifx.bp.Points()) > ifx.BatchSize {
 			// Write the batch
-			err := inf.client.Write(inf.bp)
+			err := ifx.client.Write(ifx.bp)
 			if err != nil {
 				logErrEvent(ifxLogTopic, eventWrPointsErr, err)
 			} else {
 				logrus.WithFields(logrus.Fields{
 					"topic":  ifxLogTopic,
 					"event":  "wrote",
-					"points": len(inf.bp.Points()),
+					"points": len(ifx.bp.Points()),
 				}).Info("wrote points into influx db")
 				// Recreate a new point batch as we do not want to keep writing same points
-				inf.bp, err = client.NewBatchPoints(client.BatchPointsConfig{
-					Database:  inf.DBName,
-					Precision: inf.Precision,
+				ifx.bp, err = client.NewBatchPoints(client.BatchPointsConfig{
+					Database:  ifx.DBName,
+					Precision: ifx.Precision,
 				})
 				if err != nil {
 					logErrEvent(ifxLogTopic, eventBathcPtrErr, err)
@@ -50,29 +50,29 @@ func (inf *influxDB) sendToInflux() {
 	}
 }
 
-func (inf *influxDB) NewClientAndPoints() error {
+func (ifx *influxDB) NewClientAndPoints() error {
 	var err error
 	// Create a new HTTPClient
-	inf.Addr = "http://influx:8086"
-	inf.User = "rooba"
-	inf.Pass = "cArambaBoom"
-	inf.Precision = "ms"
-	inf.DBName = "ot"
-	inf.BatchSize = 10
+	ifx.Addr = "http://influx:8086"
+	ifx.User = "rooba"
+	ifx.Pass = "cArambaBoom"
+	ifx.Precision = "ms"
+	ifx.DBName = "ot"
+	ifx.BatchSize = 10
 
-	inf.client, err = client.NewHTTPClient(client.HTTPConfig{
-		Addr:     inf.Addr,
-		Username: inf.User,
-		Password: inf.Pass,
+	ifx.client, err = client.NewHTTPClient(client.HTTPConfig{
+		Addr:     ifx.Addr,
+		Username: ifx.User,
+		Password: ifx.Pass,
 	})
 	if err != nil {
 		logErrEvent(ifxLogTopic, eventClientErr, err)
 		return err
 	}
 	// Create a new point batch
-	inf.bp, err = client.NewBatchPoints(client.BatchPointsConfig{
-		Database:  inf.DBName,
-		Precision: inf.Precision,
+	ifx.bp, err = client.NewBatchPoints(client.BatchPointsConfig{
+		Database:  ifx.DBName,
+		Precision: ifx.Precision,
 	})
 	if err != nil {
 		logErrEvent(ifxLogTopic, eventBathcPtrErr, err)

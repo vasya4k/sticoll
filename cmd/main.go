@@ -11,7 +11,6 @@ import (
 	"os"
 	"runtime"
 	"strconv"
-	"sync"
 	"time"
 
 	auth_pb "sticoll/auth"
@@ -97,26 +96,22 @@ func main() {
 	app.Action = func(c *cli.Context) {
 		db, err := bolt.Open("my.db", 0600, nil)
 		if err != nil {
-			logErrEvent("dbopen", "failure to open db file", err)
-			os.Exit(1)
+			logFatal("dbopen", "failure to open db file", err)
 		}
 		defer func() {
 			err = db.Close()
 			if err != nil {
-				logErrEvent("dbclose", "failure to close db file", err)
-				os.Exit(1)
+				logFatal("dbclose", "failure to close db file", err)
 			}
 		}()
 		// creating new influx structure and initialising
 		var ifx influxDB
 		err = ifx.NewClientAndPoints()
 		if err != nil {
-			logErrEvent(ifxLogTopic, eventNewClientErr, err)
-			os.Exit(1)
+			logFatal(ifxLogTopic, eventNewClientErr, err)
 		}
 		ifx.dataCh = make(chan ifxPoint)
 		go ifx.sendToInflux()
-
 		cfgs, err := readCfg(db)
 		if err != nil {
 			logErrEvent(cfgErrTopic, cfgReadErrEv, err)
@@ -142,25 +137,24 @@ func main() {
 		}
 		// creating gorutines for each device and passing influx channel
 		// many device rutines pass data to a single influx rutine which writes data into the DB
-		wg := &sync.WaitGroup{}
-		wg.Add(len(cfgs))
+		// might want
 		for _, cfg := range cfgs {
 			d := device{
 				cfg:        cfg,
 				ifxPointCh: ifx.dataCh,
 			}
 			fmt.Println(cfg)
-			go d.prepConAndSubscribe(wg)
+			go d.prepConAndSubscribe()
 		}
-		wg.Wait()
+		// wg.Wait()
+		select {}
 	}
 	app.Run(os.Args)
 }
 
-func (d *device) prepConAndSubscribe(wg *sync.WaitGroup) {
+func (d *device) prepConAndSubscribe() {
 	defer func() {
 		d.cfg.RUnlock()
-		wg.Done()
 	}()
 
 	var conn *grpc.ClientConn
