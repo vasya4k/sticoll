@@ -116,28 +116,17 @@ func main() {
 		if err != nil {
 			logErrEvent(cfgErrTopic, cfgReadErrEv, err)
 		}
+		cfgCh := make(chan *rest.GRPCCfg)
 		go func() {
-			err = rest.StartHTTPSrv(db, &cfgs)
+			err = rest.StartHTTPSrv(db, &cfgs, cfgCh)
 			if err != nil {
 				logErrEvent("http", "failure to start http server", err)
 				os.Exit(1)
 			}
 		}()
-		if len(cfgs) == 0 {
-			for {
-				time.Sleep(10 * time.Second)
-				cfgs, err = readCfg(db)
-				if err != nil {
-					logErrEvent(cfgErrTopic, cfgReadErrEv, err)
-				}
-				if len(cfgs) >= 1 {
-					break
-				}
-			}
-		}
 		// creating gorutines for each device and passing influx channel
 		// many device rutines pass data to a single influx rutine which writes data into the DB
-		// might want
+		// works on startup only
 		for _, cfg := range cfgs {
 			d := device{
 				cfg:        cfg,
@@ -146,46 +135,57 @@ func main() {
 			fmt.Println(cfg)
 			go d.prepConAndSubscribe()
 		}
-		// wg.Wait()
-		select {}
+		// waiting for new devices and connecting to them
+		for newCfg := range cfgCh {
+			d := device{
+				cfg:        newCfg,
+				ifxPointCh: ifx.dataCh,
+			}
+			cfgs = append(cfgs, newCfg)
+			go d.prepConAndSubscribe()
+			fmt.Println("Adeed new device", newCfg)
+		}
+
 	}
 	app.Run(os.Args)
 }
 
 func (d *device) prepConAndSubscribe() {
-	defer func() {
-		d.cfg.RUnlock()
-	}()
-
+	defer d.cfg.RUnlock()
 	var conn *grpc.ClientConn
 	for {
+		fmt.Println("NEw conn")
 		err := addDialOptions(d)
 		if err != nil {
 			logErrEvent(grpcTopic, grpcDialOptsErrEv, err)
 			return
 		}
 		hostname := d.cfg.Host + ":" + strconv.Itoa(d.cfg.Port)
-
+		fmt.Println("Dial")
 		conn, err = grpc.Dial(hostname, d.Opts...)
 		if err != nil {
 			logFatalEvent(grpcTopic, grpcConnErrEv, err)
 		}
 		defer conn.Close()
 		if d.cfg.User != "" && d.cfg.Password != "" {
+			fmt.Println("Auth")
 			user := d.cfg.User
 			pass := d.cfg.Password
 			if d.cfg.Meta == false {
+				fmt.Println("Meta")
 				d.cfg.RLock()
 				if d.cfg.Removed {
 					logInfoEvent(grpcTopic, "device removed", "exiting gorutine")
 					return
 				}
 				d.cfg.RUnlock()
+				fmt.Println("Login")
 				dat, err := auth_pb.NewLoginClient(conn).LoginCheck(context.Background(), &auth_pb.LoginRequest{
 					UserName: user,
 					Password: pass,
 					ClientId: d.cfg.CID,
 				})
+				fmt.Println("After Login")
 				if err != nil {
 					logErrEvent(grpcTopic, grpcLoginErrEv, err)
 					time.Sleep(10 * time.Second)

@@ -54,8 +54,9 @@ type Cfg struct {
 }
 
 type handler struct {
-	db   *bolt.DB
-	cfgs *[]*GRPCCfg
+	db    *bolt.DB
+	cfgs  *[]*GRPCCfg
+	cfgCh chan *GRPCCfg
 }
 
 func readCfg() Cfg {
@@ -69,11 +70,12 @@ func readCfg() Cfg {
 }
 
 //StartHTTPSrv strts http server
-func StartHTTPSrv(db *bolt.DB, cfgs *[]*GRPCCfg) error {
+func StartHTTPSrv(db *bolt.DB, cfgs *[]*GRPCCfg, cfgCh chan *GRPCCfg) error {
 	cfg := readCfg()
 	h := handler{
-		db:   db,
-		cfgs: cfgs,
+		db:    db,
+		cfgs:  cfgs,
+		cfgCh: cfgCh,
 	}
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
@@ -213,5 +215,6 @@ func (h *handler) addDevice(c *gin.Context) {
 		c.AbortWithStatusJSON(500, err)
 		return
 	}
+	h.cfgCh <- &d
 	c.JSON(200, &d)
 }
