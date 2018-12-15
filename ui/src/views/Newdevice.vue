@@ -44,7 +44,8 @@ export default {
   },
   data () {    
     if (this.item == null){
-      return {      
+      return {
+        method: 'post',    
         errors: [],
         cfg: {
           host:     '',
@@ -59,6 +60,7 @@ export default {
       }
     } else {     
       return {
+        method: 'put',
         errors: [],
         cfg: {
           host: this.item.host,
@@ -81,22 +83,24 @@ export default {
       router.push('/devices')
     },
     add () {
-      axios
-        .post('http://' + window.location.hostname + ':8888/v1/device',
-        {
-          host: this.cfg.host,
-			    port: parseInt(this.cfg.port, 10),
-			    user: this.cfg.user,
-			    password: this.cfg.password,
-			    cid: this.cfg.cid,
-          ws: parseInt(this.cfg.ws, 10),
-          uuid: this.cfg.uuid,
-          paths: [
-          {
-            path: "/interfaces",
-					  freq: parseInt(this.cfg.freq, 10)
-				  }],
-			  })
+      axios({
+        method: this.method,
+        url: 'http://' + window.location.hostname + ':8888/v1/device',
+        data: {
+            host: this.cfg.host,
+            port: parseInt(this.cfg.port, 10),
+            user: this.cfg.user,
+            password: this.cfg.password,
+            cid: this.cfg.cid,
+            ws: parseInt(this.cfg.ws, 10),
+            uuid: this.cfg.uuid,
+            paths: [
+            {
+              path: "/interfaces",
+              freq: parseInt(this.cfg.freq, 10)
+            }],
+          }
+        })
         .then(response => {
           router.push('/devices')
           console.log(response)

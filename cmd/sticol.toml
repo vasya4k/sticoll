@@ -1,0 +1,13 @@
+[influx]
+address = "http://influx:8086"
+user = "rooba"
+pass = "cArambaBoom"
+precision = "ms"
+dBName = "ot"
+batchSize = 10
+
+[http]
+port = "8888"
+uipath = "../ui/dist"
+address = ""
+

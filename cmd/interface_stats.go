@@ -93,7 +93,6 @@ type PhyInterfaceStats struct {
 	StateIfindex             int64
 	StateOperStatus          string
 	linePhyIf                bool
-	lineQueue                bool
 	ifState                  bool
 	Timestamp                time.Time
 }
@@ -184,11 +183,12 @@ func (s *interfaceStats) sendLinecardStats() {
 			extPhyif.linePhyIf = true
 			// if extPhyif.linePhyIf {
 			if extPhyif.linePhyIf && extPhyif.ifState {
-				if extPhyif.Name == "ge-0/0/0" {
-					printAsJSON(extPhyif)
-					// fmt.Println("Got new data for linecard ", extPhyif.Name, extPhyif.CountersInUnicastPkts)
-					// s.ifxPointCh <- &extPhyif
-				}
+				s.ifxPointCh <- &extPhyif
+				// if extPhyif.Name == "ge-0/0/0" {
+				// 	printAsJSON(extPhyif)
+				// 	fmt.Println("Got new data for linecard ", extPhyif.Name, extPhyif.CountersInUnicastPkts)
+				// 	s.ifxPointCh <- &extPhyif
+				// }
 			}
 			s.pifsMap[s.pif.Name] = extPhyif
 		} else {
@@ -378,13 +378,14 @@ func (s *interfaceStats) interfaceState(ocData *na_pb.OpenConfigData, hostname s
 				extPhyif.ifState = true
 				s.pifsMap[s.pif.Name] = extPhyif
 				if extPhyif.linePhyIf && extPhyif.ifState {
-					if extPhyif.Name == "ge-0/0/0" {
-						fmt.Println("State")
-						printAsJSON(extPhyif)
-						// fmt.Println("Got new state data ", extPhyif.Name, extPhyif.CountersInUnicastPkts)
-						// s.ifxPointCh <- &extPhyif
+					s.ifxPointCh <- &extPhyif
+					// if extPhyif.Name == "ge-0/0/0" {
+					// 	fmt.Println("State")
+					// 	printAsJSON(extPhyif)
+					// 	// fmt.Println("Got new state data ", extPhyif.Name, extPhyif.CountersInUnicastPkts)
+					// 	// s.ifxPointCh <- &extPhyif
 
-					}
+					// }
 				}
 			} else {
 				extPhyif.ifState = true

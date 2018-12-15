@@ -61,10 +61,7 @@ type PhyInterfaceStats struct {
 	CountersInErrors         int64
 }    
 
-This way it is way easier to use the data.  I am still thinking about the right data format though. 
-There is a RESTFull API and a web interface allowing to add delete or update device details easily.
+This way it is easier to use the data.  I am still thinking about the right way to structure the data though. 
+There is also a RESTFull API and a web interface allowing to add delete or update device details easily.
 At the moment data can only be exported into InfluxDB but I am working on Kafka export as well.
 I expect this collector to scale to at least couple hundred concurrent device connections.
-
-
- 

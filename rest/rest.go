@@ -2,13 +2,12 @@ package rest
 
 import (
 	"encoding/json"
-	"os"
 	"sync"
 
 	bolt "github.com/coreos/bbolt"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"github.com/satori/go.uuid"
+	uuid "github.com/satori/go.uuid"
 	"github.com/sirupsen/logrus"
 )
 
@@ -48,9 +47,11 @@ type TLSCfg struct {
 	ServerName string `json:"server_name"`
 }
 
-//Cfg is an HTTP cpnfig struct
-type Cfg struct {
-	Addr, Port, Secret string
+//HTTPCfg holds http configuration gets passtes into this pkg
+type HTTPCfg struct {
+	Port   string
+	UIPath string
+	Addr   string
 }
 
 type handler struct {
@@ -59,19 +60,8 @@ type handler struct {
 	cfgCh chan *GRPCCfg
 }
 
-func readCfg() Cfg {
-	var cfg Cfg
-	cfg.Port = os.Getenv("PORT")
-	cfg.Addr = os.Getenv("ADDRESS")
-	if cfg.Port == "" {
-		cfg.Port = "8888"
-	}
-	return cfg
-}
-
 //StartHTTPSrv strts http server
-func StartHTTPSrv(db *bolt.DB, cfgs *[]*GRPCCfg, cfgCh chan *GRPCCfg) error {
-	cfg := readCfg()
+func StartHTTPSrv(hcfg *HTTPCfg, db *bolt.DB, cfgs *[]*GRPCCfg, cfgCh chan *GRPCCfg) error {
 	h := handler{
 		db:    db,
 		cfgs:  cfgs,
@@ -89,6 +79,7 @@ func StartHTTPSrv(db *bolt.DB, cfgs *[]*GRPCCfg, cfgCh chan *GRPCCfg) error {
 	router.Use(cors.New(config))
 	//Add a version 1 group
 	api := router.Group("/v1")
+
 	{
 		api.GET("/devices", h.getDevices)
 		api.POST("/device", h.addDevice)
@@ -96,10 +87,10 @@ func StartHTTPSrv(db *bolt.DB, cfgs *[]*GRPCCfg, cfgCh chan *GRPCCfg) error {
 		api.DELETE("/device/:id", h.delDevice)
 	}
 	logrus.WithFields(logrus.Fields{
-		"Port": cfg.Port,
-		"Addr": cfg.Addr,
+		"Port": hcfg.Port,
+		"Addr": hcfg.Addr,
 	}).Info("http server starting ...")
-	err := router.Run(cfg.Addr + ":" + cfg.Port)
+	err := router.Run(hcfg.Addr + ":" + hcfg.Port)
 	if err != nil {
 		return err
 	}
@@ -195,11 +186,7 @@ func (h *handler) addDevice(c *gin.Context) {
 		c.AbortWithStatusJSON(500, err)
 		return
 	}
-	d.UUID, err = uuid.NewV4()
-	if err != nil {
-		c.AbortWithStatusJSON(500, err)
-		return
-	}
+	d.UUID = uuid.NewV4()
 	err = h.db.Update(func(tx *bolt.Tx) error {
 		b, err := tx.CreateBucketIfNotExists([]byte("devices"))
 		if err != nil {

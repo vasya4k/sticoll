@@ -38,7 +38,7 @@ func (d *device) subSendAndReceive(client na_pb.OpenConfigTelemetry_TelemetrySub
 		}
 		os.Exit(0)
 	}()
-
+	logInfoEvent(grpcTopic, "subscribed and waiting for new data", fmt.Sprintf("hostname: %s port: %d", d.cfg.Host, d.cfg.Port))
 	for {
 		ocData, err := client.Recv()
 		// fmt.Println("RRRRRRRRRRRRRRR", ocData)
@@ -93,7 +93,7 @@ func (d *device) subscribe(conn *grpc.ClientConn) {
 	}
 	sR.AdditionalConfig = &adCfg
 	c := na_pb.NewOpenConfigTelemetryClient(conn)
-	if d.cfg.Meta == true {
+	if d.cfg.Meta {
 		md := metadata.New(map[string]string{
 			"username": d.cfg.User,
 			"password": d.cfg.Password,
@@ -104,11 +104,11 @@ func (d *device) subscribe(conn *grpc.ClientConn) {
 	}
 	subClient, err := c.TelemetrySubscribe(ctx, &sR)
 	if err != nil {
-		logFatalEvent(grpcTopic, grpcSendErrEv, err)
+		logFatal(grpcTopic, grpcSendErrEv, err)
 	}
 	hdr, err := subClient.Header()
 	if err != nil {
-		logFatalEvent(grpcTopic, grpcHeaderErrEv, err)
+		logFatal(grpcTopic, grpcHeaderErrEv, err)
 	}
 	var headers string
 	for k, v := range hdr {

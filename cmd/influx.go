@@ -52,14 +52,6 @@ func (ifx *influxDB) sendToInflux() {
 
 func (ifx *influxDB) NewClientAndPoints() error {
 	var err error
-	// Create a new HTTPClient
-	ifx.Addr = "http://influx:8086"
-	ifx.User = "rooba"
-	ifx.Pass = "cArambaBoom"
-	ifx.Precision = "ms"
-	ifx.DBName = "ot"
-	ifx.BatchSize = 10
-
 	ifx.client, err = client.NewHTTPClient(client.HTTPConfig{
 		Addr:     ifx.Addr,
 		Username: ifx.User,
@@ -69,7 +61,6 @@ func (ifx *influxDB) NewClientAndPoints() error {
 		logErrEvent(ifxLogTopic, eventClientErr, err)
 		return err
 	}
-	// Create a new point batch
 	ifx.bp, err = client.NewBatchPoints(client.BatchPointsConfig{
 		Database:  ifx.DBName,
 		Precision: ifx.Precision,
